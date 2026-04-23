@@ -16,7 +16,7 @@ namespace Catalog.API.Features.Products.DeleteProduct
 
                 return Results.Ok(response);
             })
-            .WithName("DeleteProducts")
+            .WithName("DeleteProduct")
             .Produces<DeleteProductResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound)
