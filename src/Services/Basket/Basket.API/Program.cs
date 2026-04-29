@@ -1,12 +1,15 @@
-
-
-
-
+using Building_Blocks.Behaviros;
+using Building_Blocks.Exceptions.Handler;
+using FluentValidation;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add Service to the conainer.
+// Add services to the container
+
+
 var assembly = typeof(Program).Assembly;
+
 builder.Services.AddMediatR(config =>
 {
     config.RegisterServicesFromAssembly(assembly);
@@ -15,26 +18,24 @@ builder.Services.AddMediatR(config =>
 });
 
 builder.Services.AddValidatorsFromAssembly(assembly);
-
 builder.Services.AddCarter();
 
 builder.Services.AddMarten(opts =>
 {
     opts.Connection(builder.Configuration.GetConnectionString("Database")!);
-})
-    .UseLightweightSessions();
+    //opts.AutoCreateSchemaObjects();
+    opts.Schema.For<ShoppingCart>().Identity(x => x.UserName);
+}).UseLightweightSessions();
 
-if (builder.Environment.IsDevelopment())
-    builder.Services.InitializeMartenWith<CatalogInitialsData>();
-
+builder.Services.AddScoped<IBasketRepository, BasketRepository>();
 builder.Services.AddExceptionHandler<CustomExceptionHandler>();
+
+
 
 var app = builder.Build();
 
-// Configure the Http request pipeline.
-// This line of code find all ther class that implement ICarter and write therr routs to here
+// Configure the http request pipeline
 app.MapCarter();
 app.UseExceptionHandler(option => { });
-
 
 app.Run();
