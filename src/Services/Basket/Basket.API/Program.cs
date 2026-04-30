@@ -1,7 +1,6 @@
-using Building_Blocks.Behaviros;
-using Building_Blocks.Exceptions.Handler;
-using FluentValidation;
-using System.Reflection;
+
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,8 +27,19 @@ builder.Services.AddMarten(opts =>
 }).UseLightweightSessions();
 
 builder.Services.AddScoped<IBasketRepository, BasketRepository>();
+builder.Services.Decorate<IBasketRepository, CachedBasketRepository>();
+
+builder.Services.AddStackExchangeRedisCache(options => 
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis");
+
+});
 builder.Services.AddExceptionHandler<CustomExceptionHandler>();
 
+// Simple Health Check
+builder.Services.AddHealthChecks()
+    .AddNpgSql(builder.Configuration.GetConnectionString("Database")!)
+    .AddRedis(builder.Configuration.GetConnectionString("Redis")!);
 
 
 var app = builder.Build();
@@ -37,5 +47,10 @@ var app = builder.Build();
 // Configure the http request pipeline
 app.MapCarter();
 app.UseExceptionHandler(option => { });
+app.UseHealthChecks("/health",
+    new HealthCheckOptions
+    {
+        ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+    });
 
 app.Run();
